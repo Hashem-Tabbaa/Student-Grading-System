@@ -1,0 +1,78 @@
+version: "3"
+services:
+  authentication:
+    container_name: authentication
+    build:
+        context: ./AuthenticationService
+        dockerfile: Dockerfile
+    ports:
+        - "8081:8081"
+    networks:
+        - analysis
+  enter-data:
+    container_name: enter-data
+    build:
+        context: ./enterData
+        dockerfile: Dockerfile
+    ports:
+        - "8080:8080"
+    networks:
+        - analysis
+    depends_on:
+      - authentication
+  analytics-service:
+    container_name: analytics-service
+    build:
+        context: ./analytics-service
+        dockerfile: Dockerfile
+    ports:
+        - "8082:8082"
+    networks:
+        - analysis
+    depends_on:
+      - mysql_db
+      - mongo_db
+
+  show-results:
+    container_name: show-results
+    build:
+        context: ./show-results
+        dockerfile: Dockerfile
+    ports:
+        - "8083:8083"
+    networks:
+        - analysis
+    depends_on:
+      - mongo_db
+  mysql_db:
+    image: mysql
+    container_name: mysql_db
+    restart: on-failure
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: temperature
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql_db:/var/lib/mysql
+    networks:
+      - analysis
+  mongo_db:
+    image: mongo
+    container_name: mongo_db
+    restart: on-failure
+    environment:
+      MONGO_INITDB_DATABASE: temperature-analysis
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+        - "27017:27017"
+    volumes:
+        - ./mongo_db:/data/db
+    networks:
+        - analysis
+networks:
+    analysis:
+        driver: bridge
